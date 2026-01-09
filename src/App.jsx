@@ -7,6 +7,9 @@ import Students from "./pages/Students";
 import Enroll from "./pages/Enroll";
 
 import { Routes, Route } from "react-router-dom";
+import AddStudent from "./pages/AddStudent";
+
+<Route path="/add-student" element={<AddStudent />} />
 
 function App() {
   return (

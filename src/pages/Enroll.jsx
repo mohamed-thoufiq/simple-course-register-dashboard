@@ -1,103 +1,109 @@
 import { useEffect, useState } from "react";
 
 function Enroll() {
-  const students = ["Arun", "Karthick", "Murugan", "Priya", "Jaya"];
+  const [students, setStudents] = useState([]);
+  const [course, setCourse] = useState("");
+  const [studentId, setStudentId] = useState("");
+  const [enrollments, setEnrollments] = useState([]);
+
   const courses = [
     "Intro to HTML",
     "CSS Basics",
     "JavaScript Fundamentals",
   ];
 
-  const [selectedStudent, setSelectedStudent] = useState("");
-  const [selectedCourse, setSelectedCourse] = useState("");
-  const [enrollments, setEnrollments] = useState([]);
-
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("enrollments")) || [];
-    setEnrollments(stored);
-  }, []);
-
-  const handleEnroll = () => {
-    if (!selectedStudent || !selectedCourse) {
-      alert("Please select both student and course");
-      return;
-    }
-
-    const newEnrollment = {
-      student: selectedStudent,
-      course: selectedCourse,
-    };
-
-    const updated = [...enrollments, newEnrollment];
-    setEnrollments(updated);
-    localStorage.setItem("enrollments", JSON.stringify(updated));
-
-    setSelectedStudent("");
-    setSelectedCourse("");
+  // FETCH STUDENTS
+  const fetchStudents = () => {
+    fetch("http://localhost:3000/employees")
+      .then(res => res.json())
+      .then(data => setStudents(data));
   };
 
-  const clearEnrollments = () => {
-    if (!window.confirm("Are you sure you want to clear all enrollments?")) {
+  // FETCH ENROLLMENTS
+  const fetchEnrollments = () => {
+    fetch("http://localhost:3000/enrollments")
+      .then(res => res.json())
+      .then(data => setEnrollments(data));
+  };
+
+  useEffect(() => {
+    fetchStudents();
+    fetchEnrollments();
+  }, []);
+
+  // ENROLL
+  const handleEnroll = () => {
+    if (!studentId || !course) {
+      alert("Select student and course");
       return;
     }
 
-    localStorage.removeItem("enrollments");
-    setEnrollments([]);
+    const student = students.find(s => s.id == studentId);
+
+    fetch("http://localhost:3000/enrollments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        student: student.name,
+        course
+      }),
+    })
+      .then(() => {
+        setStudentId("");
+        setCourse("");
+        fetchEnrollments();
+      });
+  };
+
+  // CLEAR
+  const clearEnrollments = () => {
+    fetch("http://localhost:3000/enrollments", {
+      method: "DELETE",
+    }).then(fetchEnrollments);
   };
 
   return (
     <div>
-      <h2>Enroll Student</h2>
+      <h2>Enroll Student (API Based)</h2>
 
-      {/* Enrollment Form */}
       <div className="enroll-card">
         <select
-          value={selectedStudent}
-          onChange={(e) => setSelectedStudent(e.target.value)}
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
         >
           <option value="">Select Student</option>
-          {students.map((s, i) => (
-            <option key={i} value={s}>
-              {s}
-            </option>
+          {students.map(s => (
+            <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
 
         <select
-          value={selectedCourse}
-          onChange={(e) => setSelectedCourse(e.target.value)}
+          value={course}
+          onChange={(e) => setCourse(e.target.value)}
         >
           <option value="">Select Course</option>
           {courses.map((c, i) => (
-            <option key={i} value={c}>
-              {c}
-            </option>
+            <option key={i}>{c}</option>
           ))}
         </select>
 
         <button onClick={handleEnroll}>Enroll</button>
-
-        {/* Clear Button */}
         {enrollments.length > 0 && (
-          <button
-            className="clear-btn"
-            onClick={clearEnrollments}
-          >
+          <button className="clear-btn" onClick={clearEnrollments}>
             Clear Enrollments
           </button>
         )}
       </div>
 
-      {/* Enrollments List */}
       <h3>Enrolled Students</h3>
 
       {enrollments.length === 0 ? (
         <p>No enrollments yet</p>
       ) : (
         <ul className="list">
-          {enrollments.map((item, index) => (
-            <li key={index}>
-              <strong>{item.student}</strong> → {item.course}
+          {enrollments.map((e, i) => (
+            <li key={i}>
+              <strong>{e.student}</strong> → {e.course}
             </li>
           ))}
         </ul>
